@@ -687,7 +687,15 @@ def execute_task(db, groq, open_tasks, user_id):
     """Turn the oldest open task into a concrete deliverable and verify persistence."""
     if not open_tasks:
         return None
-    task = sorted(open_tasks, key=lambda t: str(t.get("created_at", "")))[0]
+    # User's explicit website-client acquisition mission takes precedence over older generic experiments.
+    task = sorted(
+        open_tasks,
+        key=lambda t: (
+            0 if ("siti web" in str(t.get("title", "")).casefold()
+                  or "realizzazione siti" in str(t.get("title", "")).casefold()) else 1,
+            str(t.get("created_at", "")),
+        ),
+    )[0]
     title = str(task.get("title", "")).strip()
     notes = str(task.get("notes", "")).strip()
     if not title:
@@ -989,7 +997,7 @@ def main():
         # Priorità al lavoro concreto: ogni ciclo lavora su un’attività aperta prima di crearne altre.
         if tasks and plan.get("action_type") in {"no_op", "audit_project", "create_task", "save_memory"}:
             plan["action_type"] = "execute_task"
-            plan["action_title"] = str(sorted(tasks, key=lambda t: str(t.get("created_at", "")))[0].get("title", "Attività aperta"))
+            plan["action_title"] = str(sorted(tasks, key=lambda t: (0 if ("siti web" in str(t.get("title", "")).casefold() or "realizzazione siti" in str(t.get("title", "")).casefold()) else 1, str(t.get("created_at", "")) ))[0].get("title", "Attività aperta"))
             plan["action_notes"] = "Realizza il deliverable richiesto dall’attività aperta e salvalo in modo persistente."
         # Advance through a deterministic sequence instead of repeating a generic offer.
         # The sequence is inferred from persisted deliverable memories and remains zero-budget.
